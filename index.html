@@ -7,6 +7,17 @@
     <title>GPU Stress Tester</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Post-processing libraries for advanced effects -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/postprocessing/EffectComposer.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/postprocessing/RenderPass.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/postprocessing/ShaderPass.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/shaders/CopyShader.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/shaders/LuminosityHighPassShader.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/shaders/UnrealBloomShader.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/shaders/FXAAShader.js"></script>
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
 
@@ -20,22 +31,20 @@
             justify-content: center;
             min-height: 100vh;
             padding: 1rem;
-            /* New: Subtle background gradient for the frosted glass effect with purple accents */
             background-image: radial-gradient(at 20% 80%, #17101f, #0b0d10), radial-gradient(at 80% 20%, #2f1d3f, #0b0d10);
             background-size: 100% 100%;
+            overflow: hidden; /* Prevent scrolling */
         }
 
         .container {
             max-width: 800px;
-            width: 100%;
+            width: 95%;
             display: flex;
             justify-content: center;
             align-items: center;
-            margin-top: 2rem;
         }
 
         .card {
-            /* More transparent and glassy */
             background-color: rgba(45, 30, 60, 0.05);
             border-radius: 2rem;
             backdrop-filter: blur(60px);
@@ -53,13 +62,13 @@
 
         .card:hover {
             transform: translateY(-8px);
-            /* Purple glow on hover */
             box-shadow: 0 15px 50px rgba(192, 132, 252, 0.8), 0 0 30px rgba(192, 132, 252, 0.6);
         }
 
         .canvas-container {
             width: 100%;
-            height: 400px;
+            position: relative;
+            padding-top: 56.25%;
             margin-top: 1.5rem;
             border-radius: 1.5rem;
             overflow: hidden;
@@ -69,6 +78,9 @@
 
         #gpu-canvas {
             display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
             background-color: #000;
@@ -78,9 +90,9 @@
             background-color: rgba(20, 15, 30, 0.1);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            padding: 1.5rem;
-            border-radius: 1.5rem;
-            margin-top: 2rem;
+            padding: 1rem;
+            border-radius: 1rem;
+            margin-top: 1.5rem;
             width: 100%;
             text-align: left;
             border: 1px dashed rgba(120, 80, 140, 0.3);
@@ -90,7 +102,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0.75rem 0;
+            padding: 0.5rem 0;
             border-bottom: 1px solid rgba(120, 80, 140, 0.2);
         }
 
@@ -101,17 +113,16 @@
         .title {
             font-size: 2rem;
             font-weight: bold;
-            /* Purple accent color */
             color: #c084fc;
             text-align: center;
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem;
         }
 
         .subtitle {
             font-size: 1rem;
             color: #a0aec0;
             text-align: center;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem;
         }
 
         .button,
@@ -148,15 +159,14 @@
             display: flex;
             flex-direction: column;
             align-items: flex-start;
-            margin-bottom: 1rem;
+            margin-bottom: 0.75rem;
         }
 
         .control-group label {
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.25rem;
             color: #a0aec0;
         }
 
-        /* Styling for the select and range input */
         .control-group select {
             background-color: rgba(100, 80, 120, 0.2);
             color: #e2e8f0;
@@ -185,13 +195,43 @@
             background: #e2e8f0;
             transform: scale(1.2);
         }
+
+        /* Responsive adjustments for a more compact layout */
+        @media (max-width: 768px) {
+            .card {
+                padding: 1.5rem;
+                border-radius: 1.5rem;
+            }
+
+            .title {
+                font-size: 1.5rem;
+            }
+
+            .subtitle {
+                font-size: 0.875rem;
+                margin-bottom: 0.75rem;
+            }
+
+            .stats-box {
+                padding: 0.75rem;
+                margin-top: 1rem;
+            }
+
+            .stats-item {
+                padding: 0.25rem 0;
+            }
+
+            .control-group label {
+                font-size: 0.875rem;
+            }
+        }
     </style>
 </head>
 
 <body class="bg-gray-900 text-gray-200">
-    <header class="text-center mb-8 mt-4">
+    <header class="text-center mb-2 mt-4">
         <h1 class="text-4xl font-extrabold text-white tracking-wide">GPU Stress Tester</h1>
-        <p class="text-lg text-gray-400 mt-2">A WebGL-powered benchmark to push your graphics processor.</p>
+        <p class="text-lg text-gray-400 mt-1">A WebGL-powered benchmark to push your graphics processor.</p>
     </header>
 
     <div class="container">
@@ -210,6 +250,9 @@
                     <option value="complexGeometry">Complex Geometry</option>
                     <option value="dynamicLighting">Dynamic Lighting</option>
                     <option value="proceduralTerrain">Procedural Terrain</option>
+                    <option value="complexInstancing">Complex Instancing</option>
+                    <option value="rayMarching">Raymarching</option>
+                    <option value="postProcessing">Post-Processing</option>
                 </select>
             </div>
 
@@ -219,7 +262,7 @@
                 <input type="range" id="object-count-slider" min="100" max="5000" value="500" step="100" class="w-full">
             </div>
 
-            <div class="flex items-center self-start mb-4">
+            <div class="flex items-center self-start mb-2">
                 <input type="checkbox" id="animate-camera-checkbox" class="mr-2" checked>
                 <label for="animate-camera-checkbox" class="text-gray-400">Animate Camera</label>
             </div>
@@ -241,14 +284,69 @@
                     <span id="object-count" class="font-bold text-gray-300">0</span>
                 </div>
             </div>
-            <button id="start-gpu-test" class="button mt-4">Start GPU Test</button>
+            <button id="start-gpu-test" class="button mt-2">Start GPU Test</button>
         </div>
     </div>
 
-    <!-- Three.js CDN -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-
     <script>
+        // Define shaders for the raymarching scene
+        const raymarchVertexShader = `
+            void main() {
+                gl_Position = vec4(position, 1.0);
+            }
+        `;
+
+        const raymarchFragmentShader = `
+            uniform float time;
+            uniform vec2 resolution;
+
+            // Signed Distance Function for a sphere
+            float sphereSDF(vec3 p, float s) {
+                return length(p) - s;
+            }
+
+            // Raymarching loop
+            float raymarch(vec3 rayOrigin, vec3 rayDirection) {
+                float totalDistance = 0.0;
+                for (int i = 0; i < 100; i++) {
+                    vec3 p = rayOrigin + rayDirection * totalDistance;
+                    float dist = sphereSDF(p, 1.0);
+                    totalDistance += dist;
+                    if (dist < 0.001 || totalDistance > 100.0) break;
+                }
+                return totalDistance;
+            }
+
+            // Simple color from normal
+            vec3 getNormal(vec3 p) {
+                float d = 0.001;
+                vec2 e = vec2(d, 0.0);
+                return normalize(vec3(
+                    sphereSDF(p + e.xyy, 1.0) - sphereSDF(p - e.xyy, 1.0),
+                    sphereSDF(p + e.yxy, 1.0) - sphereSDF(p - e.yxy, 1.0),
+                    sphereSDF(p + e.yyx, 1.0) - sphereSDF(p - e.yyx, 1.0)
+                ));
+            }
+
+            void main() {
+                vec2 uv = (gl_FragCoord.xy - 0.5 * resolution.xy) / min(resolution.x, resolution.y);
+
+                vec3 cameraPosition = vec3(0.0, 0.0, -5.0);
+                vec3 rayDirection = normalize(vec3(uv, 1.0));
+                
+                float dist = raymarch(cameraPosition, rayDirection);
+                
+                vec3 finalColor = vec3(0.0);
+                if (dist < 100.0) {
+                    vec3 hitPoint = cameraPosition + rayDirection * dist;
+                    vec3 normal = getNormal(hitPoint);
+                    finalColor = normal * 0.5 + 0.5;
+                }
+                
+                gl_FragColor = vec4(finalColor, 1.0);
+            }
+        `;
+
         // --- Global Variables and UI Elements ---
         const startGpuButton = document.getElementById('start-gpu-test');
         const sceneSelect = document.getElementById('scene-select');
@@ -272,7 +370,7 @@
         // --- GPU Stress Test Logic ---
         let gpuRunning = false;
         let gpuAnimationId = null;
-        let gpuScene, gpuCamera, gpuRenderer;
+        let gpuScene, gpuCamera, gpuRenderer, gpuComposer;
         let activeObjects = [];
 
         // Scene configurations
@@ -423,7 +521,6 @@
             },
             dynamicLighting: {
                 init: (numObjects) => {
-                    // Set a smaller number of objects for this test to focus on lighting calculations
                     const actualObjects = Math.max(1, Math.floor(numObjects / 20));
                     const geometry = new THREE.TorusGeometry(1, 0.4, 16, 100);
                     const material = new THREE.MeshPhongMaterial({ color: 0xcccccc, shininess: 100 });
@@ -434,7 +531,6 @@
                         activeObjects.push(mesh);
                     }
 
-                    // Add dynamic lights
                     const lightColor = new THREE.Color(0xff0000);
                     const light = new THREE.PointLight(lightColor, 1.5, 100);
                     gpuScene.add(light);
@@ -458,7 +554,6 @@
                             obj.rotation.x += 0.005;
                             obj.rotation.y += 0.005;
                         } else if (obj.isLight) {
-                            // Animate lights
                             obj.position.x = Math.sin(time * 0.7) * 20;
                             obj.position.y = Math.cos(time * 0.5) * 20;
                             obj.position.z = Math.sin(time * 0.3) * 20;
@@ -493,22 +588,169 @@
                         for (let i = 0; i < positions.count; i++) {
                             const x = positions.getX(i);
                             const y = positions.getY(i);
-                            // Simple noise function for dynamic terrain
                             const z = (Math.sin(x * 0.5 + time) + Math.sin(y * 0.5 + time)) * 5;
                             positions.setZ(i, z);
                         }
                         positions.needsUpdate = true;
                     }
                 }
+            },
+            complexInstancing: {
+                init: (numObjects) => {
+                    const instancedObjects = Math.min(100000, numObjects * 10);
+                    const geometry = new THREE.TorusKnotGeometry(0.5, 0.2, 50, 8);
+                    const material = new THREE.MeshPhongMaterial({ color: 0xffa500 });
+                    const instancedMesh = new THREE.InstancedMesh(geometry, material, instancedObjects);
+                    
+                    const dummy = new THREE.Object3D();
+                    for (let i = 0; i < instancedObjects; i++) {
+                        dummy.position.set(
+                            (Math.random() - 0.5) * 200,
+                            (Math.random() - 0.5) * 200,
+                            (Math.random() - 0.5) * 200
+                        );
+                        dummy.rotation.set(
+                            Math.random() * Math.PI,
+                            Math.random() * Math.PI,
+                            Math.random() * Math.PI
+                        );
+                        dummy.updateMatrix();
+                        instancedMesh.setMatrixAt(i, dummy.matrix);
+                    }
+                    
+                    gpuScene.add(instancedMesh);
+                    activeObjects.push(instancedMesh);
+                    gpuCamera.position.z = 200;
+                    objectCountEl.textContent = `${instancedObjects} Instanced Objects`;
+                },
+                animate: () => {
+                    const instancedMesh = activeObjects[0];
+                    const dummy = new THREE.Object3D();
+                    const now = Date.now() * 0.001;
+                    for (let i = 0; i < instancedMesh.count; i++) {
+                        instancedMesh.getMatrixAt(i, dummy.matrix);
+                        dummy.matrix.decompose(dummy.position, dummy.quaternion, dummy.scale);
+                        dummy.rotation.x += 0.01;
+                        dummy.rotation.y += 0.005;
+                        dummy.updateMatrix();
+                        instancedMesh.setMatrixAt(i, dummy.matrix);
+                    }
+                    instancedMesh.instanceMatrix.needsUpdate = true;
+                }
+            },
+            rayMarching: {
+                init: () => {
+                    const geometry = new THREE.PlaneGeometry(2, 2);
+                    const material = new THREE.ShaderMaterial({
+                        uniforms: {
+                            time: { value: 0.0 },
+                            resolution: { value: new THREE.Vector2() }
+                        },
+                        vertexShader: raymarchVertexShader,
+                        fragmentShader: raymarchFragmentShader
+                    });
+                    const mesh = new THREE.Mesh(geometry, material);
+                    gpuScene.add(mesh);
+                    activeObjects.push(mesh);
+                    gpuCamera.position.z = 1;
+                    objectCountEl.textContent = `Complex Shader`;
+                },
+                animate: () => {
+                    const mesh = activeObjects[0];
+                    if (mesh) {
+                        mesh.material.uniforms.time.value = performance.now() / 1000;
+                        mesh.material.uniforms.resolution.value.x = window.innerWidth;
+                        mesh.material.uniforms.resolution.value.y = window.innerHeight;
+                    }
+                }
+            },
+            postProcessing: {
+                init: (numObjects) => {
+                    // Set a base scene to render before post-processing
+                    const geometry = new THREE.SphereGeometry(1, 64, 64);
+                    const material = new THREE.MeshNormalMaterial();
+                    for (let i = 0; i < numObjects / 20; i++) {
+                        const mesh = new THREE.Mesh(geometry, material);
+                        mesh.position.set((Math.random() - 0.5) * 30, (Math.random() - 0.5) * 30, (Math.random() - 0.5) * 30);
+                        gpuScene.add(mesh);
+                        activeObjects.push(mesh);
+                    }
+                    gpuCamera.position.z = 40;
+                    
+                    // Setup post-processing composer
+                    gpuComposer = new THREE.EffectComposer(gpuRenderer);
+                    gpuComposer.addPass(new THREE.RenderPass(gpuScene, gpuCamera));
+                    
+                    // Add an expensive bloom pass
+                    const bloomPass = new THREE.UnrealBloomPass(
+                        new THREE.Vector2(window.innerWidth, window.innerHeight),
+                        1.5, // strength
+                        0.4, // radius
+                        0.85 // threshold
+                    );
+                    gpuComposer.addPass(bloomPass);
+
+                    // Add an expensive effect pass
+                    const customEffect = {
+                        uniforms: {
+                            tDiffuse: { value: null },
+                            time: { value: 0.0 }
+                        },
+                        vertexShader: `
+                            varying vec2 vUv;
+                            void main() {
+                                vUv = uv;
+                                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                            }
+                        `,
+                        fragmentShader: `
+                            uniform sampler2D tDiffuse;
+                            uniform float time;
+                            varying vec2 vUv;
+
+                            void main() {
+                                vec2 uv = vUv;
+                                vec4 color = texture2D(tDiffuse, uv);
+                                float noise = fract(sin(dot(uv * time, vec2(12.9898, 78.233))) * 43758.5453);
+                                color.rgb += noise * 0.1;
+                                gl_FragColor = color;
+                            }
+                        `
+                    };
+                    const customPass = new THREE.ShaderPass(customEffect);
+                    gpuComposer.addPass(customPass);
+
+                    // Final render pass
+                    gpuComposer.addPass(new THREE.ShaderPass(THREE.CopyShader));
+                    
+                    objectCountEl.textContent = `Multi-Pass Shaders`;
+                },
+                animate: () => {
+                    activeObjects.forEach(obj => {
+                        obj.rotation.x += 0.005;
+                        obj.rotation.y += 0.005;
+                    });
+                    if (gpuComposer) {
+                        // Animate the custom shader uniform
+                        const passes = gpuComposer.passes;
+                        if (passes.length > 2 && passes[2] instanceof THREE.ShaderPass) {
+                            passes[2].uniforms.time.value = performance.now() / 1000;
+                        }
+                    }
+                }
             }
         };
 
         function initGpuTest(sceneName) {
-            // Cleanup previous scene
+            // Cleanup previous scene and composer
             if (gpuScene) {
                 while (gpuScene.children.length > 0) {
                     gpuScene.remove(gpuScene.children[0]);
                 }
+            }
+            if (gpuComposer) {
+                gpuComposer.dispose();
+                gpuComposer = null;
             }
             activeObjects = [];
 
@@ -526,9 +768,11 @@
             gpuRenderer.setPixelRatio(window.devicePixelRatio);
             handleResize(); // Set initial size
 
-            // Add lights
-            const ambientLight = new THREE.AmbientLight(0x404040, 5);
-            gpuScene.add(ambientLight);
+            // Add lights for scenes that need them
+            if (sceneName !== 'rayMarching') {
+                const ambientLight = new THREE.AmbientLight(0x404040, 5);
+                gpuScene.add(ambientLight);
+            }
 
             // Initialize the selected scene with the current object count
             const numObjects = parseInt(objectCountSlider.value);
@@ -561,7 +805,12 @@
                 gpuCamera.lookAt(0, 0, 0);
             }
 
-            gpuRenderer.render(gpuScene, gpuCamera);
+            // Render using composer if it exists, otherwise use the renderer
+            if (gpuComposer) {
+                gpuComposer.render();
+            } else {
+                gpuRenderer.render(gpuScene, gpuCamera);
+            }
         }
 
         function startGpuTest() {
@@ -586,6 +835,9 @@
                 gpuCamera.aspect = rect.width / rect.height;
                 gpuCamera.updateProjectionMatrix();
                 gpuRenderer.setSize(rect.width, rect.height);
+                if (gpuComposer) {
+                    gpuComposer.setSize(rect.width, rect.height);
+                }
             }
         }
         window.addEventListener('resize', handleResize);
